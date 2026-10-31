@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> MUMU NOTE | 美睫記帳與進階報表CRM系統</title>
+    <style>
+        /* --- 韓系奶油風 變數設定 --- */
+        :root {
+            --bg-cream: #FDFBF7;
+            --main-butter: #F5EBE0;
+            --accent-latte: #E3D5CA;
+            --text-dark: #4A3E3D;
+            --text-muted: #8C7A78;
+            --pure-white: #FFFFFF;
+            --shadow-soft: rgba(140, 122, 120, 0.08);
+            --delete-red: #E07A5F;
+            --income-green: #95B46A;
+            --expense-red: #E07A5F;
+            --birthday-pink: #E6B8A2;
+            --highlight-orange: #D87A60; /* 備註專用顯眼色 */
+        }
+
+        /* --- 全局樣式 --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            padding-top: 65px; 
+            padding-bottom: 30px;
+        }
+
+        /* --- 登入區塊樣式 --- */
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 24px;
+            background: var(--pure-white);
+            border-radius: 24px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            border: 1px solid rgba(227, 213, 202, 0.3);
+            text-align: center;
+        }
+        .auth-container h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: var(--text-dark);
+        }
+        .auth-input {
+            width: 100%;
+            border: 1px solid var(--accent-latte);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            background-color: var(--bg-cream);
+            outline: none;
+        }
+        .auth-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .auth-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .auth-btn.login { background-color: var(--text-dark); color: var(--pure-white); }
+        .auth-btn.register { background-color: var(--main-butter); color: var(--text-dark); }
+        
+        .user-info-bar {
+            background-color: var(--main-butter);
+            padding: 6px 14px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 500px;
+            margin: -10px auto 15px auto;
+            border-radius: 12px;
+        }
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--delete-red);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* --- 頂部快選列 (Quick Toolbar) --- */
+        .top-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: var(--pure-white);
+            box-shadow: 0 2px 10px var(--shadow-soft);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            padding: 0 5px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-btn.active {
+            background-color: var(--main-butter);
+            color: var(--text-dark);
+            font-weight: bold;
+        }
+
+        /* --- 店名 Header --- */
+        .shop-header {
+            text-align: center;
+            margin: 20px 0 15px 0;
+        }
+        .shop-header h1 {
+            font-size: 22px;
+            letter-spacing: 2px;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        .shop-header p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        /* --- 頁面容器切換 --- */
+        .page {
+            display: none;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 14px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* --- 圓弧卡片方框通用樣式 --- */
+        .card-box {
+            background-color: var(--pure-white);
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            margin-bottom: 18px;
+            border: 1px solid rgba(227, 213, 202, 0.3);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ==================== 頁面 1: 月曆 ==================== */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .calendar-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-dark);
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        .calendar-title-select {
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background-color: var(--bg-cream);
+            border: 1px solid var(--accent-latte);
+            color: var(--text-dark);
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            row-gap: 12px;
+            text-align: center;
+        }
+
+        .day-cell {
+            position: relative;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        .day-cell.empty { cursor: default; }
+
+        .day-cell .day-number {
+            position: relative;
+            z-index: 2;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .day-cell.today .day-number {
+            background-color: var(--text-muted);
+            color: var(--pure-white);
+        }
+
+        .day-cell.selected .day-number {
+            background-color: var(--text-dark) !important;
+            color: var(--pure-white) !important;
+        }
+
+        .day-dot {
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent-latte);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 2px;
+            z-index: 3;
+        }
+
+        /* 表單進階排版 */
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .income-only-field {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+        
+        .input-style {
+            width: 100%;
+            border: 1px solid var(--accent-latte);
+            border-radius: 12px;
+            padding: 9px 12px;
+            font-size: 14px;
+            color: var(--text-dark);
+            background-color: var(--bg-cream);
+            outline: none;
+        }
+        
+        .quick-tag-wrapper {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 6px;
+            margin-top: -2px;
+            margin-bottom: 2px;
+        }
+        .quick-tag {
+            background-color: var(--main-butter);
+            color: var(--text-dark);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid rgba(227, 213, 202, 0.5);
+            transition: all 0.2s;
+        }
+        .quick-tag:hover {
+            background-color: var(--accent-latte);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--text-dark);
+            color: var(--pure-white);
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        /* 條列式明細樣式 */
+        .record-list { list-style: none; }
+        .record-item {
+            border-bottom: 1px solid rgba(227, 213, 202, 0.2);
+            padding: 12px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .record-item:hover {
+            background-color: rgba(245, 235, 224, 0.2);
+        }
+        
+        .rec-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .rec-mid { font-size: 13px; color: var(--text-dark); margin-bottom: 3px; }
+        .rec-bot { font-size: 11px; color: var(--text-muted); }
+
+        .type-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+        .type-tag.inc { background-color: #E8F0FE; color: #1A73E8; }
+        .type-tag.exp { background-color: #FCE8E6; color: var(--delete-red); }
+
+        .record-amount { font-weight: 600; }
+        .record-amount.inc { color: var(--income-green); }
+        .record-amount.exp { color: var(--expense-red); }
+
+        .btn-delete { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0 5px 0 10px; z-index: 10; position: relative; }
+
+        /* ==================== 通用搜尋列與滾動框 ==================== */
+        .search-container { display: flex; gap: 8px; margin-bottom: 15px; }
+        .search-bar {
+            flex: 1; border: 1px solid var(--accent-latte); border-radius: 12px;
+            padding: 10px; font-size: 14px; outline: none; background-color: var(--pure-white);
+        }
+        .btn-search-icon {
+            background-color: var(--main-butter); border: 1px solid var(--accent-latte);
+            border-radius: 12px; width: 42px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px;
+        }
+        .scroll-container { max-height: 55vh; overflow-y: auto; }
+        .date-group-title {
+            font-size: 12px; color: var(--text-muted); font-weight: 600; margin: 10px 0 5px 0;
+            background-color: var(--main-butter); padding: 2px 8px; border-radius: 6px; display: inline-block;
+        }
+
+        /* ==================== 頁面 3: 報表 ==================== */
+        .report-filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .select-report {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--accent-latte);
+            background-color: var(--pure-white);
+            color: var(--text-dark);
+            font-size: 14px;
+            outline: none;
+            font-weight: 600;
+        }
+        .report-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        
+        .summary-mini-card {
+            background-color: var(--pure-white); padding: 15px; border-radius: 16px; text-align: center;
+            border: 1px solid rgba(227, 213, 202, 0.4); cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 2px 8px var(--shadow-soft);
+        }
+        .summary-mini-card:active { transform: scale(0.97); }
+        .summary-mini-card.active-filter {
+            background-color: var(--main-butter);
+            border-color: var(--text-muted);
+        }
+        .summary-mini-card p { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+        .summary-mini-card h3 { font-size: 18px; font-weight: 700; }
+        
+        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
+        .progress-bar-bg { background-color: var(--main-butter); height: 6px; border-radius: 3px; width: 100%; margin-top: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: var(--text-muted); width: 0%; transition: width 0.5s ease; }
+
+        .report-detail-box {
+            margin-top: 15px;
+            border-top: 1px dashed var(--accent-latte);
+            padding-top: 15px;
+        }
+        .report-detail-title {
+            font-size: 14px; font-weight: bold; color: var(--text-dark); margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .report-summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 4px;
+            border-bottom: 1px dashed rgba(227, 213, 202, 0.3);
+            font-size: 14px;
+        }
+        .report-summary-item:last-child {
+            border-bottom: none;
+        }
+
+        /* ==================== 彈出式編輯視窗 (Modal) ==================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 14px;
+        }
+        .modal-box {
+            background-color: var(--pure-white);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-modal {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-modal.cancel {
+            background-color: var(--main-butter);
+            color: var(--text-dark);
+        }
+        .btn-modal.save {
+            background-color: var(--text-dark);
+            color: var(--pure-white);
+        }
+
+        /* ==================== 頁面 4: 客戶資料 ==================== */
+        .birthday-banner {
+            background-color: #FFF0EB;
+            border: 1px dashed var(--birthday-pink);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        .birthday-banner-title {
+            font-size: 13px; font-weight: bold; color: #D87A60; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+        }
+        .birthday-list { font-size: 12px; color: var(--text-dark); list-style: none; padding-left: 4px;}
+        .birthday-list li { margin-bottom: 3px; }
+
+        .customer-card {
+            background-color: var(--pure-white); border-radius: 16px; padding: 14px; margin-bottom: 12px;
+            border: 1px solid rgba(227, 213, 202, 0.5); cursor: pointer; transition: background-color 0.2s;
+        }
+        .customer-card:hover { background-color: #F7EFE5; }
+        .customer-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--accent-latte); padding-bottom: 6px; margin-bottom: 8px; }
+        .customer-name { font-weight: bold; font-size: 15px; }
+        
+        /* 頂部資產與消費總金額包裝欄 */
+        .customer-header-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .customer-deposit { font-size: 12px; color: #1A73E8; font-weight: 600; }
+        .customer-total-spent { font-size: 12px; color: var(--income-green); font-weight: 600; }
+        
+        /* 備註突顯樣式區塊碼 */
+        .customer-note-highlight {
+            font-size: 13px;
+            color: var(--highlight-orange) !important;
+            font-weight: bold !important;
+            background-color: #FFF5F2;
+            padding: 4px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            border: 1px dashed rgba(216, 122, 96, 0.3);
+        }
+        
+        .customer-detail-row { font-size: 12px; color: var(--text-dark); margin-bottom: 3px; }
+        
+        .customer-expanded-zone {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(227, 213, 202, 0.4);
+            display: none;
+        }
+        .customer-card.open .customer-expanded-zone { display: block; }
+        .edit-crm-group {
+            background-color: var(--pure-white); padding: 10px; border-radius: 12px;
+            border: 1px solid var(--accent-latte); margin-bottom: 8px;
+        }
+        .edit-crm-title { font-size: 11px; font-weight: bold; color: var(--text-muted); margin-bottom: 6px; }
+        
+        /* 底部按鈕群組 */
+        .crm-action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .btn-mini-save {
+            background-color: var(--text-dark); color: var(--pure-white); border: none;
+            border-radius: 8px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .btn-mini-delete {
+            background-color: #FCE8E6; color: var(--delete-red); border: 1px solid rgba(224, 122, 95, 0.4);
+            border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 500; cursor: pointer;
+        }
+        .no-data { text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px 0; }
+
+        /* ==================== 頁面 5: 報價 ==================== */
+        .top-toolbar .nav-btn { padding: 6px 7px; font-size: 12px; }
+        .q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .q-opt {
+            border: 1.5px solid var(--accent-latte); background: var(--bg-cream); border-radius: 12px;
+            padding: 10px; text-align: left; cursor: pointer; color: var(--text-dark); font-size: 14px;
+        }
+        .q-opt b { display: block; font-weight: 600; }
+        .q-opt i { font-style: normal; font-size: 12px; color: var(--text-muted); }
+        .q-opt.on { background: var(--main-butter); border-color: var(--text-muted); }
+        .q-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; }
+        .q-row .input-style { width: 110px; text-align: right; }
+        .q-line { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+        .quick-tag.on { background: var(--text-dark); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-page" class="auth-container">
+        <header class="shop-header">
+            <h1>MUMU STUDIO</h1>
+            <p>沐 目 ﹒ 美 睫 記 帳 與 客 戶 管 理</p>
+        </header>
+        <h2>系統登入 / 註冊</h2>
+        <input type="email" id="auth-email" class="auth-input" placeholder="請輸入電子信箱 (Email)">
+        <input type="password" id="auth-password" class="auth-input" placeholder="請輸入密碼 (至少 6 位數)">
+        <div class="auth-btn-group">
+            <button class="auth-btn register" onclick="handleRegister()">註冊帳號</button>
+            <button class="auth-btn login" onclick="handleLogin()">登入系統</button>
+        </div>
+    </div>
+
+    <div id="main-app" style="display: none;">
+        <nav class="top-toolbar">
+            <button class="nav-btn active" onclick="switchPage('calendar-page', this)">1. 月曆</button>
+            <button class="nav-btn" onclick="switchPage('all-records-page', this)">2. 總紀錄</button>
+            <button class="nav-btn" onclick="switchPage('reports-page', this)">3. 報表</button>
+            <button class="nav-btn" onclick="switchPage('customers-page', this)">4. 客戶資料</button>
+            <button class="nav-btn" onclick="switchPage('quote-page', this)">5. 報價</button>
+        </nav>
+
+        <header class="shop-header">
+            <h1>MUMU STUDIO</h1>
+            <p>沐 目 ﹒ 美 睫 記 帳 與 客 戶 管 理</p>
+        </header>
+
+        <div class="user-info-bar">
+            <span id="user-display-email">帳號：loading...</span>
+            <button class="logout-btn" onclick="handleLogout()">登出 ➔</button>
+        </div>
+
+        <main id="calendar-page" class="page active">
+            <div class="card-box">
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">❮</button>
+                    <div>
+                        <select id="select-cal-year" class="calendar-title-select" onchange="selectCalendarDate()"></select>
+                        <select id="select-cal-month" class="calendar-title-select" onchange="selectCalendarDate()"></select>
+                    </div>
+                    <button onclick="changeMonth(1)">❯</button>
+                </div>
+                <div class="weekdays">
+                    <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                </div>
+                <div id="calendar-days" class="days-grid"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span id="selected-date-label">收支紀錄</span></div>
+                <div style="margin-bottom: 18px; padding-bottom: 15px; border-bottom: 1px solid rgba(227, 213, 202, 0.4);">
+                    
+                    <div class="form-group">
+                        <select id="add-type" class="input-style" onchange="handleTypeChange()">
+                            <option value="收入">收入 (美睫/儲值)</option>
+                            <option value="支出">支出 (店鋪開銷)</option>
+                        </select>
+                        
+                        <div id="cust-name-wrapper" class="income-only-field">
+                            <input type="text" id="add-cust-name" class="input-style" placeholder="客戶姓名">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div class="quick-tag-wrapper">
+                                <span class="quick-tag" onclick="quickSelectProject('美睫')">＋ 美睫</span>
+                                <span class="quick-tag" onclick="quickSelectProject('睫毛管理')">＋ 睫毛管理</span>
+                            </div>
+                            <input type="text" id="add-project" class="input-style" style="grid-column: 1 / -1;" placeholder="施作項目 或 自行填寫">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="number" id="add-amount" class="input-style" style="grid-column: 1 / -1;" placeholder="本次收支金額" inputmode="numeric">
+                    </div>
+
+                    <div class="form-group" id="deposit-wrapper-row">
+                        <div id="deposit-wrapper" style="grid-column: 1 / -1; display: grid; grid-template-columns: 110px 1fr; gap: 8px;">
+                            <select id="add-deposit-type" class="input-style" style="padding: 9px 8px; font-size: 14px;">
+                                <option value="儲值金">儲值金</option>
+                                <option value="課堂數">課堂數</option>
+                            </select>
+                            <input type="number" id="add-deposit" class="input-style" placeholder="輸入剩餘數量 (無改動可留空)" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="grid-template-columns: 1fr;">
+                        <input type="text" id="add-note" class="input-style" placeholder="備註說明 📝">
+                    </div>
+
+                    <button class="btn-submit" onclick="addRecord()">確認新增紀錄</button>
+                </div>
+                <ul id="day-record-list" class="record-list"></ul>
+            </div>
+        </main>
+
+        <main id="all-records-page" class="page">
+            <div class="card-box">
+                <div class="card-title">歷史所有明細</div>
+                <div class="search-container">
+                    <input type="text" id="search-input" class="search-bar" placeholder="輸入關鍵字搜尋（姓名、項目、備註）">
+                    <button class="btn-search-icon" onclick="renderAllRecords()">🔍</button>
+                </div>
+                <div id="all-records-container" class="scroll-container"></div>
+            </div>
+        </main>
+
+        <main id="reports-page" class="page">
+            <div class="report-filter-bar">
+                <select id="report-year-select" class="select-report" onchange="renderReports()"></select>
+                <select id="report-month-select" class="select-report" onchange="renderReports()">
+                    <option value="all">全年總覽</option>
+                    <option value="0">1 月</option><option value="1">2 月</option><option value="2">3 月</option>
+                    <option value="3">4 月</option><option value="4">5 月</option><option value="5">6 月</option>
+                    <option value="6">7 月</option><option value="7">8 月</option><option value="8">9 月</option>
+                    <option value="9">10 月</option><option value="10">11 月</option><option value="11">12 月</option>
+                </select>
+            </div>
+
+            <div class="report-summary">
+                <div id="card-inc-trigger" class="summary-mini-card" onclick="toggleReportDetailFilter('收入')">
+                    <p>區間總收入 (點擊看項目統計)</p>
+                    <h3 id="rep-total-income" style="color: var(--income-green);">$0</h3>
+                </div>
+                <div id="card-exp-trigger" class="summary-mini-card" onclick="toggleReportDetailFilter('支出')">
+                    <p>區間總支出 (點擊看項目統計)</p>
+                    <h3 id="rep-total-expense" style="color: var(--expense-red);">$0</h3>
+                </div>
+            </div>
+            
+            <div class="card-box" id="report-detail-box-container" style="display:none; margin-bottom:18px;">
+                <div class="report-detail-title">
+                    <span id="report-detail-type-label">項目統計統整</span>
+                    <span style="font-size:11px; color:var(--text-muted); font-weight:normal; cursor:pointer;" onclick="closeReportDetail()">關閉 ✕</span>
+                </div>
+                <div id="report-detail-list-wrapper" class="scroll-container" style="max-height:280px;"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span>財務效益分析</span>
+                    <span id="report-scope-label" style="font-size:13px; color:var(--text-muted);"></span>
+                </div>
+                <div class="stat-row" style="margin-bottom: 20px;">
+                    <span style="font-weight: bold;">營運淨利:</span>
+                    <span id="rep-net-profit" style="font-size: 18px; font-weight: bold;">$0</span>
+                </div>
+                <div>
+                    <p style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">施作項目排行 (收入分析)</p>
+                    <div id="income-ranking-container"></div>
+                </div>
+            </div>
+        </main>
+
+        <main id="customers-page" class="page">
+            <div class="birthday-banner">
+                <div class="birthday-banner-title">🎂 <span id="current-month-title"></span>月壽星提醒專區</div>
+                <ul id="birthday-list-container" class="birthday-list"></ul>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">客戶管理中心</div>
+                <div class="search-container">
+                    <input type="text" id="cust-search-input" class="search-bar" placeholder="輸入客戶姓名搜尋...">
+                    <button class="btn-search-icon" onclick="renderCustomerPage()">🔍</button>
+                </div>
+                <div id="customers-container" class="scroll-container"></div>
+            </div>
+        </main>
+
+        <main id="quote-page" class="page">
+            <div id="q-cards"></div>
+            <div class="card-box">
+                <div class="card-title"><span>費用計算</span><span id="q-edit" style="font-size:13px;color:var(--text-muted);cursor:pointer">⚙️ 編輯價目</span></div>
+                <div class="q-row"><span>預收定金</span><input id="q-dep" class="input-style" type="number" inputmode="numeric" placeholder="0"></div>
+                <div class="q-row"><span>服務費</span><span id="q-fee" class="quick-tag">＋10% 服務費</span></div>
+                <div class="q-row"><span>優惠活動</span><span style="display:flex;gap:6px;align-items:center"><input id="q-dis" class="input-style" style="width:80px" type="number" inputmode="numeric" placeholder="0"><span id="q-cash" class="quick-tag on">元</span><span id="q-pct" class="quick-tag">%</span></span></div>
+                <div id="q-note" style="font-size:12px;color:var(--text-muted)">目前為折抵現金</div>
+            </div>
+            <div class="card-box" style="text-align:center">
+                <div style="font-size:12px;color:var(--text-muted)">應付尾款</div>
+                <div id="q-bal" style="font-size:30px;font-weight:700;margin:4px 0 12px">$0</div>
+                <div class="modal-footer" style="margin-top:0;flex-wrap:wrap">
+                    <button class="btn-modal cancel" id="q-reset">↺ 重置</button>
+                    <button class="btn-modal cancel" id="q-copy">📋 複製</button>
+                    <button class="btn-modal save" id="q-view">👁️ 明細</button>
+                    <button class="btn-modal save" id="q-post" style="flex:1 1 100%;background:var(--highlight-orange)">📒 轉入記帳</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="edit-modal" class="modal-overlay" onclick="closeEditModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span>✏️ 修改紀錄資料</span>
+                <span style="cursor:pointer; font-weight:normal; font-size:14px;" onclick="closeEditModal()">✕</span>
+            </div>
+            <input type="hidden" id="edit-id">
+            
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">日期</label>
+                <input type="date" id="modal-edit-date" class="input-style" style="background:#fff;">
+            </div>
+
+            <div style="margin-bottom: 12px;" id="modal-cust-wrapper">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">客戶姓名</label>
+                <input type="text" id="modal-edit-name" class="input-style" style="background:#fff;">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">項目</label>
+                <input type="text" id="modal-edit-project" class="input-style" style="background:#fff;">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">金額</label>
+                <input type="number" id="modal-edit-amount" class="input-style" style="background:#fff;" inputmode="numeric">
+            </div>
+
+            <div style="margin-bottom: 12px;" id="modal-deposit-wrapper">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">剩餘資產紀錄</label>
+                <div style="display: grid; grid-template-columns: 110px 1fr; gap: 8px;">
+                    <select id="modal-edit-deposit-type" class="input-style" style="background:#fff; padding: 9px 8px; font-size: 14px;">
+                        <option value="儲值金">儲值金</option>
+                        <option value="課堂數">課堂數</option>
+                    </select>
+                    <input type="number" id="modal-edit-deposit" class="input-style" style="background:#fff;" placeholder="無改動可留空" inputmode="numeric">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">備註說明</label>
+                <input type="text" id="modal-edit-note" class="input-style" style="background:#fff;">
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-modal cancel" onclick="closeEditModal()">取消</button>
+                <button class="btn-modal save" onclick="updateRecordData()">儲存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="q-modal" class="modal-overlay">
+        <div class="modal-box" style="max-height:88vh;overflow:auto">
+            <div class="modal-header"><span>報價單</span><span id="q-close" style="cursor:pointer;font-weight:normal;font-size:14px">✕</span></div>
+            <div id="q-body"></div>
+            <div class="modal-footer"><button class="btn-modal cancel" id="q-copy2">📋 複製文字</button><button class="btn-modal save" id="q-close2">關閉</button></div>
+        </div>
+    </div>
+
+    <div id="q-admin" class="modal-overlay">
+        <div class="modal-box" style="max-height:88vh;overflow:auto">
+            <div class="modal-header"><span>⚙️ 編輯價目</span></div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">每行一個項目，格式「名稱,價格」。小卡名稱留空即刪除。</p>
+            <div id="q-admin-body"></div>
+            <button class="btn-submit" id="q-addcard" style="background:var(--main-butter);color:var(--text-dark)">＋ 新增小卡</button>
+            <div class="modal-footer"><button class="btn-modal cancel" id="q-acancel">取消</button><button class="btn-modal save" id="q-asave">儲存變更</button></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ⚠️ Firebase 後台申請的配置資訊（已修正完畢）
+        const firebaseConfig = {
+            apiKey: "AIzaSyBskoljPhASGXHB2oPqMFHjr2X4NajGVXk",
+            authDomain: "studio-6429e.firebaseapp.com",
+            projectId: "studio-6429e",
+            storageBucket: "studio-6429e.firebasestorage.app",
+            messagingSenderId: "647698948838",
+            appId: "1:647698948838:web:9f51ddc458fa93ff6f9127",
+            measurementId: "G-LR1MP5QJJ9"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 全域變數
+        let currentUser = null;
+        let records = [];
+        let customerCRM = {};
+        let currentDate = new Date();
+        const todayStr = formatDateString(new Date());
+        let selectedDateStr = todayStr;
+        let currentReportDetailFilter = '';
+        let quoteCards = null; // 報價價目（存於 Firebase）
+
+        // 監聽登入狀態切換
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-display-email').innerText = `帳號：${user.email}`;
+                document.getElementById('auth-page').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                
+        // 1. 先嘗試從雲端載入資料
+        await loadCloudData(); 
+
+        // 2. 判斷雲端載入後，你的資料變數（假設叫 customerCRM 或 records）是否為空
+        //    (請根據你專案實際儲存資料的變數名稱調整，這裡以 customerCRM 為例)
+        if (!customerCRM || Object.keys(customerCRM).length === 0) {
+            console.log('雲端無資料，嘗試從本地 LocalStorage 搬家...');
+            
+            // 讀取舊的本地資料（請替換成你以前在 LocalStorage 使用的 Key 名稱）
+            const localData = localStorage.getItem('mumu_studio_local_data'); 
+            
+            if (localData) {
+                customerCRM = JSON.parse(localData);
+                
+                // 3. 搬家成功後，立刻調用你的雲端同步函數，把資料推上 Firebase
+                await saveCloudData(); 
+                console.log('本地資料已成功同步至雲端！');
+            }
+        }
+                
+                // 報價價目初始化（雲端優先）
+                if (window.quoteInit) window.quoteInit(quoteCards);
+
+                // 網頁元件初始化
+                buildYearDropdowns();
+                buildMonthDropdown();
+                initCalendar();
+                renderDayRecords();
+                handleTypeChange();
+                renderReports();
+                renderCustomerPage();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-page').style.display = 'block';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        });
+
+        // 註冊帳號
+        window.handleRegister = async function() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            if(!email || !password) return alert('請輸入完整信箱與密碼');
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('帳號註冊成功並已自動登入！');
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    alert('此電子郵件已被註冊，請直接點選登入。');
+                } else if (error.code === 'auth/weak-password') {
+                    alert('密碼強度不足，請至少輸入 6 位數。');
+                } else {
+                    alert('註冊失敗：' + error.message);
+                }
+            }
+        }
+
+        // 登入系統
+        window.handleLogin = async function() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            if(!email || !password) return alert('請輸入信箱與密碼');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    alert('電子郵件或密碼錯誤。');
+                } else {
+                    alert('登入失敗：' + error.message);
+                }
+            }
+        }
+
+        // 登出系統
+        window.handleLogout = function() {
+            if(confirm('確定要登出系統嗎？')) {
+                signOut(auth);
+            }
+        }
+
+        // 從 Firebase 雲端讀取資料（💡方案 A：核心自動移轉與讀取機制）
+        async function loadCloudData() {
+            if (!currentUser) return;
+            try {
+                const userDocRef = doc(db, "users", currentUser.uid);
+                const docSnap = await getDoc(userDocRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    records = data.records || [];
+                    customerCRM = data.customerCRM || {};
+                    quoteCards = data.quoteCards || null;
+                } else {
+                    // 💡 如果雲端目前沒資料，代表此帳號第一次使用，啟動 LocalStorage 舊資料搬家救援機制
+                    console.log("偵測到雲端無資料，正在嘗試從本機 LocalStorage 轉移舊客戶資產資料...");
+                    const oldData = loadSavedLocalData();
+                    records = oldData.records;
+                    customerCRM = oldData.crm;
+                    
+                    // 搬家完畢後，立刻同步並備份到雲端，防止資料消失
+                    await saveCloudData();
+                }
+            } catch (e) {
+                console.error("讀取雲端資料失敗：", e);
+            }
+        }
+
+        // 本地舊資料救援讀取（向下相容，精準抓取各版本舊資料）
+        function loadSavedLocalData() {
+            const recordKeys = ['mumu_records_v4', 'mumu_records_v3', 'mumu_records_v2', 'mumu_records'];
+            const crmKeys = ['mumu_crm_v4', 'mumu_crm_v3', 'mumu_crm_v2', 'mumu_crm', 'customerCRM']; // 加入你原本常用的 customerCRM 欄位
+            let loadedRecords = null, loadedCRM = null;
+            
+            for (let key of recordKeys) {
+                let data = localStorage.getItem(key);
+                if (data) { try { loadedRecords = JSON.parse(data); break; } catch(e){} }
+            }
+            for (let key of crmKeys) {
+                let data = localStorage.getItem(key);
+                if (data) { try { loadedCRM = JSON.parse(data); break; } catch(e){} }
+            }
+            return { records: loadedRecords || [], crm: loadedCRM || {} };
+        }
+
+        // 同步資料回 Firebase 雲端
+        async function saveCloudData() {
+            if (!currentUser) return;
+            try {
+                const userDocRef = doc(db, "users", currentUser.uid);
+                await setDoc(userDocRef, {
+                    records: records,
+                    customerCRM: customerCRM,
+                    quoteCards: quoteCards,
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            } catch (e) {
+                console.error("同步至雲端失敗：", e);
+            }
+        }
+
+        // ==================== 報價分頁橋接 ====================
+        window.saveQuoteCards = async function(c) {
+            quoteCards = c;
+            await saveCloudData();
+        }
+        window.fillRecordForm = function(d) {
+            window.switchPage('calendar-page', document.querySelector('.top-toolbar .nav-btn'));
+            document.getElementById('add-type').value = '收入';
+            window.handleTypeChange();
+            document.getElementById('add-project').value = d.project || '';
+            document.getElementById('add-amount').value = d.amount || '';
+            document.getElementById('add-note').value = d.note || '';
+            const nameEl = document.getElementById('add-cust-name');
+            nameEl.scrollIntoView({ block: 'center' });
+            nameEl.focus();
+        }
+
+        // ==================== 記帳與 CRM 核心渲染邏輯 ====================
+        function formatDateString(dateObj) {
+            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        }
+        function escapeHtml(text) {
+            if(!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function formatDepositDisplay(val, type) {
+            if (val === undefined || val === null || val === '') return '未記錄';
+            return type === '課堂數' ? `${val} 堂` : `$${val}`;
+        }
+        window.handleTypeChange = function() {
+            const type = document.getElementById('add-type').value;
+            const custWrapper = document.getElementById('cust-name-wrapper');
+            const depositRow = document.getElementById('deposit-wrapper-row');
+            if (type === '收入') {
+                custWrapper.style.display = 'block'; depositRow.style.display = 'grid'; 
+            } else {
+                custWrapper.style.display = 'none'; depositRow.style.display = 'none';
+                document.getElementById('add-cust-name').value = ''; document.getElementById('add-deposit').value = '';
+            }
+        }
+        window.quickSelectProject = function(projectName) {
+            document.getElementById('add-project').value = projectName;
+        }
+        function buildYearDropdowns() {
+            const currentYear = new Date().getFullYear();
+            const calYearSelect = document.getElementById('select-cal-year');
+            const reportYearSelect = document.getElementById('report-year-select');
+            if (calYearSelect && reportYearSelect) {
+                calYearSelect.innerHTML = ''; reportYearSelect.innerHTML = '';
+                for (let y = currentYear - 3; y <= currentYear + 5; y++) {
+                    let opt1 = document.createElement('option'); opt1.value = y; opt1.innerText = `${y} 年`; calYearSelect.appendChild(opt1);
+                    let opt2 = document.createElement('option'); opt2.value = y; opt2.innerText = `${y} 年度`; reportYearSelect.appendChild(opt2);
+                }
+                reportYearSelect.value = currentYear;
+            }
+        }
+        function buildMonthDropdown() {
+            const calMonthSelect = document.getElementById('select-cal-month');
+            if (calMonthSelect) {
+                calMonthSelect.innerHTML = '';
+                for (let m = 0; m < 12; m++) {
+                    let opt = document.createElement('option'); opt.value = m; opt.innerText = `${m + 1} 月`; calMonthSelect.appendChild(opt);
+                }
+            }
+        }
+        window.switchPage = function(pageId, btnElement) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'all-records-page') renderAllRecords();
+            if (pageId === 'reports-page') { closeReportDetail(); renderReports(); }
+            if (pageId === 'calendar-page') { initCalendar(); renderDayRecords(); }
+            if (pageId === 'customers-page') renderCustomerPage();
+        }
+        window.openEditModal = function(id, event) {
+            if(event) event.stopPropagation();
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+            document.getElementById('edit-id').value = rec.id;
+            document.getElementById('modal-edit-date').value = rec.date;
+            document.getElementById('modal-edit-project').value = rec.project;
+            document.getElementById('modal-edit-amount').value = rec.amount;
+            document.getElementById('modal-edit-note').value = rec.note || '';
+            const nameWrapper = document.getElementById('modal-cust-wrapper');
+            const depositWrapper = document.getElementById('modal-deposit-wrapper');
+            if(rec.type === '收入') {
+                nameWrapper.style.display = 'block'; depositWrapper.style.display = 'block';
+                document.getElementById('modal-edit-name').value = rec.custName || '';
+                document.getElementById('modal-edit-deposit-type').value = rec.depositType || '儲值金';
+                document.getElementById('modal-edit-deposit').value = (rec.deposit !== undefined && rec.deposit !== '') ? rec.deposit : '';
+            } else {
+                nameWrapper.style.display = 'none'; depositWrapper.style.display = 'none';
+            }
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+        window.closeEditModal = function(event) {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+        window.updateRecordData = async function() {
+            const id = document.getElementById('edit-id').value;
+            const recIndex = records.findIndex(r => r.id === id);
+            if(recIndex === -1) return;
+            const date = document.getElementById('modal-edit-date').value;
+            const project = document.getElementById('modal-edit-project').value.trim();
+            const amount = parseInt(document.getElementById('modal-edit-amount').value);
+            const note = document.getElementById('modal-edit-note').value.trim();
+            if (!date || isNaN(amount) || amount < 0) return alert('請輸入有效資料');
+            
+            records[recIndex].date = date;
+            records[recIndex].project = project || (records[recIndex].type === '收入' ? '美睫服務' : '日常開銷');
+            records[recIndex].amount = amount;
+            records[recIndex].note = note;
+
+            if (records[recIndex].type === '收入') {
+                const custName = document.getElementById('modal-edit-name').value.trim();
+                const depositType = document.getElementById('modal-edit-deposit-type').value;
+                const depositInput = document.getElementById('modal-edit-deposit').value.trim();
+                records[recIndex].custName = custName;
+                records[recIndex].depositType = depositType;
+                records[recIndex].deposit = depositInput !== '' ? parseInt(depositInput) : '';
+                if (custName && !customerCRM[custName]) customerCRM[custName] = { phone: '', birthday: '', note: '' };
+            }
+            await saveCloudData();
+            closeEditModal();
+            initCalendar(); renderDayRecords(); renderReports(); renderCustomerPage();
+            if(document.getElementById('all-records-page').classList.contains('active')) renderAllRecords();
+        }
+        function initCalendar() {
+            const year = currentDate.getFullYear(); const month = currentDate.getMonth();
+            const calYearSel = document.getElementById('select-cal-year');
+            const calMonthSel = document.getElementById('select-cal-month');
+            if(calYearSel) calYearSel.value = year; if(calMonthSel) calMonthSel.value = month;
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const daysContainer = document.getElementById('calendar-days');
+            if(!daysContainer) return; daysContainer.innerHTML = '';
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div'); emptyCell.classList.add('day-cell', 'empty'); daysContainer.appendChild(emptyCell);
+            }
+            for (let day = 1; day <= totalDays; day++) {
+                const dayCell = document.createElement('div'); dayCell.classList.add('day-cell');
+                const currentCellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                dayCell.innerHTML = `<div class="day-number">${day}</div>`;
+                if (records.some(r => r.date === currentCellDateStr)) {
+                    const dot = document.createElement('div'); dot.classList.add('day-dot'); dayCell.appendChild(dot);
+                }
+                if (currentCellDateStr === todayStr) dayCell.classList.add('today');
+                if (currentCellDateStr === selectedDateStr) dayCell.classList.add('selected');
+                dayCell.onclick = function() {
+                    selectedDateStr = currentCellDateStr;
+                    document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected'));
+                    dayCell.classList.add('selected'); renderDayRecords();
+                };
+                daysContainer.appendChild(dayCell);
+            }
+        }
+        window.selectCalendarDate = function() {
+            currentDate.setFullYear(parseInt(document.getElementById('select-cal-year').value));
+            currentDate.setMonth(parseInt(document.getElementById('select-cal-month').value));
+            initCalendar();
+        }
+        window.changeMonth = function(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction); initCalendar();
+        }
+        function renderDayRecords() {
+            const labelEl = document.getElementById('selected-date-label'); if(!labelEl) return;
+            const dateParts = selectedDateStr.split('-'); labelEl.innerText = `${dateParts[1]}月${dateParts[2]}日 收支紀錄 (點擊可修改)`;
+            const dayRecords = records.filter(r => r.date === selectedDateStr);
+            const listContainer = document.getElementById('day-record-list'); if(!listContainer) return;
+            listContainer.innerHTML = '';
+            if (dayRecords.length === 0) { listContainer.innerHTML = '<li class="no-data">今日尚無收支紀錄清單</li>'; return; }
+            dayRecords.forEach(rec => {
+                const li = document.createElement('li'); li.classList.add('record-item'); li.setAttribute('onclick', `openEditModal('${rec.id}', event)`);
+                const isInc = rec.type === '收入'; const typeClass = isInc ? 'inc' : 'exp';
+                const displayName = isInc ? (rec.custName ? rec.custName : '無名客') : '店鋪';
+                li.innerHTML = `
+                    <div class="rec-top">
+                        <div><span class="type-tag ${typeClass}">${rec.type}</span><span style="font-weight:600;">${escapeHtml(displayName)}</span></div>
+                        <div><span class="record-amount ${typeClass}">${isInc?'+':'-'}$${rec.amount}</span><button class="btn-delete" onclick="deleteRecord('${rec.id}', 'day', event)">🗑️</button></div>
+                    </div>
+                    <div class="rec-mid">項目: ${escapeHtml(rec.project)}</div>
+                    <div class="rec-bot">
+                        ${isInc ? `<span>${rec.depositType || '儲值金'}餘額: ${formatDepositDisplay(rec.deposit, rec.depositType)}</span>` : ''}
+                        ${rec.note ? `<span style="margin-left:10px;">📝 ${escapeHtml(rec.note)}</span>` : ''}
+                    </div>`;
+                listContainer.appendChild(li);
+            });
+        }
+        window.addRecord = async function() {
+            const type = document.getElementById('add-type').value;
+            const custName = type === '收入' ? document.getElementById('add-cust-name').value.trim() : '';
+            const depositType = type === '收入' ? document.getElementById('add-deposit-type').value : '儲值金';
+            const depositInput = type === '收入' ? document.getElementById('add-deposit').value.trim() : '';
+            const project = document.getElementById('add-project').value.trim() || (type === '收入' ? '美睫服務' : '日常開銷');
+            const amountInput = document.getElementById('add-amount').value.trim();
+            const amount = parseInt(amountInput); const note = document.getElementById('add-note').value.trim();
+            if (amountInput === '' || isNaN(amount) || amount < 0) return alert('請輸入有效的金額數字');
+
+            records.push({
+                id: 'id_' + Date.now() + Math.random().toString(36).substr(2, 4),
+                date: selectedDateStr, type: type, custName: custName, project: project, amount: amount,
+                depositType: depositType, deposit: depositInput !== '' ? parseInt(depositInput) : '', note: note
+            });
+            if (type === '收入' && custName && !customerCRM[custName]) customerCRM[custName] = { phone: '', birthday: '', note: '' };
+            
+            await saveCloudData();
+            document.getElementById('add-cust-name').value = ''; document.getElementById('add-project').value = '';
+            document.getElementById('add-amount').value = ''; document.getElementById('add-deposit').value = ''; document.getElementById('add-note').value = '';
+            initCalendar(); renderDayRecords(); renderReports(); renderCustomerPage();
+        }
+        window.deleteRecord = async function(id, pageSource, event) {
+            if(event) event.stopPropagation();
+            if(confirm('❌確定要刪除這筆紀錄嗎？')) {
+                records = records.filter(r => r.id !== id);
+                await saveCloudData();
+                initCalendar(); renderDayRecords(); renderReports(); renderCustomerPage();
+                if (pageSource === 'all') renderAllRecords();
+            }
+        }
+        window.renderAllRecords = function() {
+            const container = document.getElementById('all-records-container'); if(!container) return;
+            const searchKey = document.getElementById('search-input').value.toLowerCase().trim(); container.innerHTML = '';
+            let filtered = records.filter(r => r.project.toLowerCase().includes(searchKey) || (r.custName && r.custName.toLowerCase().includes(searchKey)) || (r.note && r.note.toLowerCase().includes(searchKey)));
+            if (filtered.length === 0) { container.innerHTML = '<div class="no-data">找不到相關紀錄</div>'; return; }
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            let currentGroupDate = ""; let currentGroupDiv = null;
+            filtered.forEach(rec => {
+                if (rec.date !== currentGroupDate) {
+                    currentGroupDate = rec.date; currentGroupDiv = document.createElement('div');
+                    let dT = document.createElement('div'); dT.classList.add('date-group-title'); dT.innerText = rec.date;
+                    currentGroupDiv.appendChild(dT); container.appendChild(currentGroupDiv);
+                }
+                let item = document.createElement('div'); item.classList.add('record-item'); item.setAttribute('onclick', `openEditModal('${rec.id}', event)`);
+                let isInc = rec.type === '收入'; let typeClass = isInc ? 'inc' : 'exp';
+                item.innerHTML = `
+                    <div class="rec-top">
+                        <div><span class="type-tag ${typeClass}">${rec.type}</span><span style="font-weight:600;">${escapeHtml(isInc ? rec.custName : '店鋪')}</span></div>
+                        <div><span class="record-amount ${typeClass}">${isInc?'+':'-'}$${rec.amount}</span><button class="btn-delete" onclick="deleteRecord('${rec.id}', 'all', event)">🗑️</button></div>
+                    </div>
+                    <div class="rec-mid">項目: ${escapeHtml(rec.project)}</div>`;
+                currentGroupDiv.appendChild(item);
+            });
+        }
+        window.renderReports = function() {
+            const yearSel = document.getElementById('report-year-select'); const monthSel = document.getElementById('report-month-select');
+            if(!yearSel || !monthSel) return;
+            const selectedYear = parseInt(yearSel.value); const selectedMonthVal = monthSel.value;
+            const scopeLabel = document.getElementById('report-scope-label');
+            if(scopeLabel) scopeLabel.innerText = selectedMonthVal === 'all' ? `${selectedYear} 全年度總覽` : `${selectedYear} 年 ${parseInt(selectedMonthVal) + 1} 月 統計`;
+            const filtered = records.filter(r => { let d = new Date(r.date); return d.getFullYear() === selectedYear && (selectedMonthVal === 'all' || d.getMonth() === parseInt(selectedMonthVal)); });
+            let inc = 0, exp = 0, rank = {};
+            filtered.forEach(r => { if (r.type === '收入') { inc += r.amount; rank[r.project] = (rank[r.project] || 0) + r.amount; } else { exp += r.amount; } });
+            document.getElementById('rep-total-income').innerText = `$${inc.toLocaleString()}`;
+            document.getElementById('rep-total-expense').innerText = `$${exp.toLocaleString()}`;
+            let net = inc - exp; let netEl = document.getElementById('rep-net-profit');
+            if(netEl) { netEl.innerText = `$${net.toLocaleString()}`; netEl.style.color = net >= 0 ? 'var(--income-green)' : 'var(--expense-red)'; }
+            // 項目排行
+            let rankingContainer = document.getElementById('income-ranking-container');
+            if(rankingContainer) {
+                rankingContainer.innerHTML = '';
+                let sorted = Object.keys(rank).map(k => ({project: k, amount: rank[k]})).sort((a,b) => b.amount - a.amount);
+                if(!sorted.length) { rankingContainer.innerHTML = '<p class="no-data">此區間尚無收入</p>'; }
+                else {
+                    let max = sorted[0].amount;
+                    sorted.forEach((item, index) => {
+                        let row = document.createElement('div'); row.style.marginBottom = '12px';
+                        row.innerHTML = `<div style="display:flex; justify-content:space-between; font-size:13px;"><span>${index + 1}. ${escapeHtml(item.project)}</span><strong>$${item.amount.toLocaleString()}</strong></div>
+                                         <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${(item.amount/max)*100}%"></div></div>`;
+                        rankingContainer.appendChild(row);
+                    });
+                }
+            }
+            if (currentReportDetailFilter) renderReportDetailList(filtered, currentReportDetailFilter);
+        }
+        window.toggleReportDetailFilter = function(type) {
+            if (currentReportDetailFilter === type) { closeReportDetail(); return; }
+            currentReportDetailFilter = type; document.getElementById('report-detail-box-container').style.display = 'block';
+            document.getElementById('report-detail-type-label').innerText = `📊 區間【${type}】項目合計統整`;
+            renderReports();
+        }
+        window.closeReportDetail = function() {
+            currentReportDetailFilter = ''; let el = document.getElementById('report-detail-box-container'); if(el) el.style.display = 'none';
+        }
+        function renderReportDetailList(scopedRecords, type) {
+            const listWrapper = document.getElementById('report-detail-list-wrapper'); if(!listWrapper) return; listWrapper.innerHTML = '';
+            const targets = scopedRecords.filter(r => r.type === type);
+            if (!targets.length) { listWrapper.innerHTML = '<div class="no-data">無數據</div>'; return; }
+            let sum = {}; targets.forEach(r => { let p = r.project.trim() || '未命名'; sum[p] = (sum[p] || 0) + r.amount; });
+            Object.keys(sum).sort((a,b) => sum[b] - sum[a]).forEach(k => {
+                let row = document.createElement('div'); row.classList.add('report-summary-item');
+                row.innerHTML = `<span>${escapeHtml(k)}</span><span style="color:${type==='收入'?'var(--income-green)':'var(--delete-red)'}">${type==='收入'?'+':'-'}$${sum[k].toLocaleString()}</span>`;
+                listWrapper.appendChild(row);
+            });
+        }
+        window.renderCustomerPage = function() {
+            const thisMonth = new Date().getMonth() + 1;
+            let mTitleEl = document.getElementById('current-month-title'); if(mTitleEl) mTitleEl.innerText = thisMonth;
+            const container = document.getElementById('customers-container'); if(!container) return;
+            const searchKey = document.getElementById('cust-search-input')?.value.trim().toLowerCase() || ''; container.innerHTML = '';
+            let customerMap = {};
+
+            records.forEach(r => {
+                if (r.type === '支出' || !r.custName) return;
+                const name = r.custName.trim(); if (searchKey && !name.toLowerCase().includes(searchKey)) return;
+                if (!customerMap[name]) {
+                    let crmData = customerCRM[name] || { phone: '', birthday: '', note: '' };
+                    customerMap[name] = { name: name, phone: crmData.phone||'', birthday: crmData.birthday||'', note: crmData.note||'', visitCount: 0, totalSpent: 0, latestDepositLabel: '剩餘資產', latestDepositValue: '未記錄', latestDepositTime: 0, history: [] };
+                }
+                customerMap[name].visitCount++; customerMap[name].totalSpent += r.amount; customerMap[name].history.push(r);
+                let recordTime = new Date(r.date).getTime();
+                if (r.deposit !== undefined && r.deposit !== '' && recordTime >= customerMap[name].latestDepositTime) {
+                    customerMap[name].latestDepositLabel = r.depositType || '儲值金'; customerMap[name].latestDepositValue = formatDepositDisplay(r.deposit, r.depositType); customerMap[name].latestDepositTime = recordTime;
+                }
+            });
+            Object.keys(customerCRM).forEach(name => {
+                if (searchKey && !name.toLowerCase().includes(searchKey)) return;
+                if (!customerMap[name]) customerMap[name] = { name: name, phone: customerCRM[name].phone||'', birthday: customerCRM[name].birthday||'', note: customerCRM[name].note||'', visitCount: 0, totalSpent: 0, latestDepositLabel: '儲值餘額', latestDepositValue: '未記錄', history: [] };
+            });
+            let customers = Object.values(customerMap);
+            // 壽星提醒
+            let birthdayContainer = document.getElementById('birthday-list-container');
+            if(birthdayContainer) {
+                birthdayContainer.innerHTML = ''; let bCount = 0;
+                customers.forEach(c => {
+                    if (c.birthday && c.birthday.length === 4 && parseInt(c.birthday.substring(0,2)) === thisMonth) {
+                        bCount++; let li = document.createElement('li'); li.innerHTML = `🎉 <strong>${escapeHtml(c.name)}</strong> (${c.birthday.substring(0,2)}月${c.birthday.substring(2,4)}日) ${c.phone ? `📞 ${escapeHtml(c.phone)}` : ''}`; birthdayContainer.appendChild(li);
+                    }
+                });
+                if(!bCount) birthdayContainer.innerHTML = '<li>本月暫無壽星顧客記錄</li>';
+            }
+            if (!customers.length) { container.innerHTML = '<div class="no-data">暫無客戶資料</div>'; return; }
+            customers.sort((a,b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
+            customers.forEach(cust => {
+                let card = document.createElement('div'); card.classList.add('customer-card');
+                cust.history.sort((a,b) => new Date(b.date) - new Date(a.date));
+                let hHtml = cust.history.map(h => `<div style="border-top:1px dashed rgba(227,213,202,0.3); padding-top:4px; margin-top:4px;"><span style="color:var(--text-muted);">${h.date}</span> | <span>${escapeHtml(h.project)}</span> <strong style="color:${h.type==='收入'?'var(--income-green)':'var(--delete-red)'}">($${h.amount})</strong></div>`).join('');
+                card.innerHTML = `
+                    <div class="customer-card-header" onclick="toggleCard(this.parentNode)">
+                        <span class="customer-name">👤 ${escapeHtml(cust.name)}</span>
+                        <div class="customer-header-right"><span class="customer-deposit">${cust.latestDepositLabel}: ${cust.latestDepositValue}</span><span class="customer-total-spent">累積消費: $${cust.totalSpent.toLocaleString()}</span></div>
+                    </div>
+                    <div onclick="toggleCard(this.parentNode)">
+                        <div class="customer-detail-row">📞 電話: ${cust.phone ? escapeHtml(cust.phone) : '未填寫'}</div>
+                        <div class="customer-detail-row">🎂 生日: ${cust.birthday ? cust.birthday.substring(0,2)+'/'+cust.birthday.substring(2,4) : '未填寫'}</div>
+                        <div class="customer-note-highlight">📝 備註：${cust.note ? escapeHtml(cust.note) : '無備註紀錄'}</div>
+                    </div>
+                    <div class="customer-expanded-zone">
+                        <div class="edit-crm-group" onclick="event.stopPropagation()">
+                            <div class="edit-crm-title">✏️ 編輯客戶資料</div>
+                            <input type="text" id="edit-name-${escapeHtml(cust.name)}" class="input-style" style="background:#fff; margin-bottom:6px;" value="${escapeHtml(cust.name)}">
+                            <div style="display:flex; gap:6px; margin-bottom:6px;">
+                                <input type="tel" id="edit-phone-${escapeHtml(cust.name)}" class="input-style" style="background:#fff;" value="${escapeHtml(cust.phone)}" placeholder="手機">
+                                <input type="number" id="edit-birth-${escapeHtml(cust.name)}" class="input-style" style="background:#fff;" value="${escapeHtml(cust.birthday)}" placeholder="生日4碼">
+                            </div>
+                            <input type="text" id="edit-note-${escapeHtml(cust.name)}" class="input-style" style="background:#fff; margin-bottom:6px;" value="${escapeHtml(cust.note)}" placeholder="備註">
+                            <div class="crm-action-row">
+                                <button class="btn-mini-delete" onclick="deleteCustomerData('${escapeHtml(cust.name)}')">🗑️ 刪除客戶</button>
+                                <button class="btn-mini-save" onclick="saveCRMData('${escapeHtml(cust.name)}')">💾 儲存修改</button>
+                            </div>
+                        </div>
+                        <div style="max-height:90px; overflow-y:auto; font-size:12px;">${hHtml || '無消費明細'}</div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+        window.toggleCard = function(cardElement) {
+            let isOpen = cardElement.classList.contains('open');
+            document.querySelectorAll('.customer-card').forEach(c => c.classList.remove('open'));
+            if (!isOpen) cardElement.classList.add('open');
+        }
+        window.saveCRMData = async function(oldName) {
+            const newName = document.getElementById(`edit-name-${oldName}`).value.trim();
+            const phoneVal = document.getElementById(`edit-phone-${oldName}`).value.trim();
+            const birthVal = document.getElementById(`edit-birth-${oldName}`).value.trim();
+            const noteVal = document.getElementById(`edit-note-${oldName}`).value.trim();
+            if (!newName) return alert('姓名不能留空');
+            if (birthVal && birthVal.length !== 4) return alert('生日請輸入 4 碼數字');
+
+            if (oldName !== newName) {
+                records.forEach(r => { if (r.custName && r.custName.trim() === oldName) r.custName = newName; });
+                customerCRM[newName] = { phone: phoneVal, birthday: birthVal, note: noteVal };
+                delete customerCRM[oldName];
+            } else {
+                customerCRM[oldName] = { phone: phoneVal, birthday: birthVal, note: noteVal };
+            }
+            await saveCloudData();
+            alert(`資料已成功同步更新！`); renderCustomerPage();
+        }
+        window.deleteCustomerData = async function(name) {
+            if (confirm(`確定要刪除客戶「${name}」的基礎資料嗎？`)) {
+                if (customerCRM[name]) delete customerCRM[name];
+                await saveCloudData(); renderCustomerPage();
+            }
+        }
+    </script>
+
+    <!-- ==================== 報價分頁邏輯 ==================== -->
+    <script>
+    (function(){
+    var KEY='mumu_quote_v1';
+    var $=function(i){return document.getElementById(i)};
+    var esc=function(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+    var money=function(n){return '$'+Math.round(n).toLocaleString('en-US')};
+    var DEF=[
+     {name:'款式',mode:'single',items:[{n:'單根自然',p:1200},{n:'3D 輕盈',p:1500},{n:'6D 濃密',p:1800},{n:'漫畫睫',p:1600}]},
+     {name:'補睫',mode:'single',items:[{n:'兩週內',p:800},{n:'三週內',p:1100},{n:'四週以上',p:1400}]},
+     {name:'卸除',mode:'single',items:[{n:'不需卸除',p:0},{n:'卸除自家',p:200},{n:'卸除他店',p:300}]},
+     {name:'加購',mode:'multi',items:[{n:'下睫毛',p:400},{n:'彩色睫毛',p:200},{n:'睫毛護理',p:300},{n:'閃鑽點綴',p:100}]}
+    ];
+    var cards;
+    try{var s=JSON.parse(localStorage.getItem(KEY)||'null');cards=Array.isArray(s)&&s.length?s:DEF;}catch(e){cards=DEF;}
+    var sel={},o={fee:false,mode:'cash',dis:0,dep:0},draft=[];
+
+    function render(){
+      $('q-cards').innerHTML=cards.map(function(c,ci){
+        return '<div class="card-box"><div class="card-title"><span>'+esc(c.name)+'</span><span style="font-size:12px;font-weight:normal;color:var(--text-muted)">'+(c.mode==='multi'?'可複選':'單選')+'</span></div><div class="q-opts">'+
+        c.items.map(function(it,ii){var on=(sel[ci]||[]).indexOf(ii)>-1;
+          return '<button class="q-opt'+(on?' on':'')+'" data-c="'+ci+'" data-i="'+ii+'"><b>'+esc(it.n)+'</b><i>'+money(it.p)+'</i></button>';}).join('')+'</div></div>';
+      }).join('');
+      $('q-bal').textContent=money(calc().bal);
+    }
+    function calc(){
+      var lines=[],sub=0;
+      cards.forEach(function(c,ci){(sel[ci]||[]).forEach(function(ii){var it=c.items[ii];if(it){lines.push({g:c.name,n:it.n,p:it.p});sub+=it.p;}});});
+      var fee=o.fee?Math.round(sub*0.1):0;
+      var dis=o.mode==='cash'?o.dis:Math.round(sub*o.dis/100);
+      var total=Math.max(0,sub+fee-dis);
+      return{lines:lines,sub:sub,fee:fee,dis:dis,total:total,dep:o.dep,bal:Math.max(0,total-o.dep)};
+    }
+    function text(){
+      var r=calc(),t='MUMU STUDIO 美睫報價\n';
+      r.lines.forEach(function(l){t+=l.g+'：'+l.n+' '+money(l.p)+'\n';});
+      t+='小計 '+money(r.sub)+'\n';
+      if(r.fee)t+='服務費 10% '+money(r.fee)+'\n';
+      if(r.dis)t+='優惠折抵 -'+money(r.dis)+'\n';
+      t+='總金額 '+money(r.total)+'\n';
+      if(r.dep)t+='預收定金 -'+money(r.dep)+'\n';
+      return t+'應付尾款 '+money(r.bal);
+    }
+    function copy(){
+      var t=text();
+      function fb(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');alert('已複製');}catch(e){alert('複製失敗，請手動選取');}a.remove();}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製')},fb);}else fb();
+    }
+    function quote(){
+      var r=calc(),h='';
+      if(!r.lines.length)h='<div class="no-data">尚未選擇任何項目</div>';
+      r.lines.forEach(function(l){h+='<div class="q-line"><span>'+esc(l.n)+' <small style="color:var(--text-muted)">'+esc(l.g)+'</small></span><span>'+money(l.p)+'</span></div>';});
+      h+='<div class="q-line" style="border-top:1px dashed var(--accent-latte);margin-top:6px"><span>小計</span><span>'+money(r.sub)+'</span></div>';
+      if(r.fee)h+='<div class="q-line"><span>服務費 10%</span><span>'+money(r.fee)+'</span></div>';
+      if(r.dis)h+='<div class="q-line"><span>優惠折抵</span><span>-'+money(r.dis)+'</span></div>';
+      h+='<div class="q-line"><span>總金額</span><span>'+money(r.total)+'</span></div>';
+      if(r.dep)h+='<div class="q-line"><span>預收定金</span><span>-'+money(r.dep)+'</span></div>';
+      h+='<div class="q-line" style="font-weight:700;font-size:16px;border-top:1px solid var(--accent-latte);margin-top:6px;padding-top:10px"><span>應付尾款</span><span style="color:var(--highlight-orange)">'+money(r.bal)+'</span></div>';
+      $('q-body').innerHTML=h;$('q-modal').style.display='flex';
+    }
+
+    $('q-cards').addEventListener('click',function(e){
+      var b=e.target.closest('.q-opt');if(!b)return;
+      var ci=+b.dataset.c,ii=+b.dataset.i,cur=sel[ci]||[],k=cur.indexOf(ii);
+      if(cards[ci].mode==='multi'){if(k>-1)cur.splice(k,1);else cur.push(ii);}
+      else cur=k>-1?[]:[ii];
+      sel[ci]=cur;render();
+    });
+    $('q-dep').addEventListener('input',function(){o.dep=Math.max(0,+this.value||0);render();});
+    $('q-dis').addEventListener('input',function(){o.dis=Math.max(0,+this.value||0);render();});
+    $('q-fee').addEventListener('click',function(){o.fee=!o.fee;this.classList.toggle('on',o.fee);render();});
+    function setMode(m){
+      o.mode=m;$('q-cash').classList.toggle('on',m==='cash');$('q-pct').classList.toggle('on',m==='pct');
+      $('q-note').textContent=m==='cash'?'目前為折抵現金':'目前為折扣百分比（例如 10 = 減 10%）';render();
+    }
+    $('q-cash').addEventListener('click',function(){setMode('cash')});
+    $('q-pct').addEventListener('click',function(){setMode('pct')});
+    $('q-reset').addEventListener('click',function(){
+      sel={};o.fee=false;o.dis=0;o.dep=0;$('q-dep').value='';$('q-dis').value='';$('q-fee').classList.remove('on');setMode('cash');
+    });
+    $('q-copy').addEventListener('click',copy);$('q-copy2').addEventListener('click',copy);
+    $('q-view').addEventListener('click',quote);
+    function closeQ(){$('q-modal').style.display='none'}
+    $('q-close').addEventListener('click',closeQ);$('q-close2').addEventListener('click',closeQ);
+    $('q-modal').addEventListener('click',function(e){if(e.target===this)closeQ()});
+
+    /* 雲端同步初始化（登入後由主程式呼叫） */
+    window.quoteInit=function(cloud){
+      if(Array.isArray(cloud)&&cloud.length){
+        cards=cloud;try{localStorage.setItem(KEY,JSON.stringify(cards));}catch(e){}
+      }else if(localStorage.getItem(KEY)&&window.saveQuoteCards){
+        window.saveQuoteCards(cards); /* 雲端沒有但本機有：搬上雲端 */
+      }
+      sel={};render();
+    };
+    /* 轉入記帳：預填月曆的收入表單（不會自動送出） */
+    $('q-post').addEventListener('click',function(){
+      var r=calc();
+      if(!r.lines.length)return alert('請先選擇報價項目');
+      var note=r.lines.map(function(l){return l.n}).join('、');
+      if(r.dep)note+='｜定金 '+money(r.dep);
+      if(window.fillRecordForm)window.fillRecordForm({project:'美睫',amount:r.total,note:note});
+    });
+
+    /* 編輯價目 */
+    function adminRender(){
+      $('q-admin-body').innerHTML=draft.map(function(c){
+        return '<div class="edit-crm-group"><div style="display:flex;gap:6px;margin-bottom:6px"><input class="input-style qa-name" style="background:#fff" value="'+esc(c.name)+'" placeholder="小卡名稱"><select class="input-style qa-mode" style="background:#fff;width:90px"><option value="single"'+(c.mode==='single'?' selected':'')+'>單選</option><option value="multi"'+(c.mode==='multi'?' selected':'')+'>複選</option></select></div><textarea class="input-style qa-items" style="background:#fff" rows="4" placeholder="名稱,價格">'+esc(c.items.map(function(x){return x.n+','+x.p}).join('\n'))+'</textarea></div>';
+      }).join('');
+    }
+    function collect(){
+      return [].map.call($('q-admin-body').querySelectorAll('.edit-crm-group'),function(g){
+        var items=g.querySelector('.qa-items').value.split('\n').map(function(l){
+          l=l.trim();if(!l)return null;var m=l.match(/^(.*?)[,，\s]+(\d+)\s*$/);
+          return m?{n:m[1].trim(),p:+m[2]}:{n:l,p:0};
+        }).filter(function(x){return x&&x.n});
+        return{name:g.querySelector('.qa-name').value.trim(),mode:g.querySelector('.qa-mode').value,items:items};
+      });
+    }
+    $('q-edit').addEventListener('click',function(){draft=JSON.parse(JSON.stringify(cards));adminRender();$('q-admin').style.display='flex';});
+    $('q-addcard').addEventListener('click',function(){draft=collect();draft.push({name:'新小卡',mode:'single',items:[]});adminRender();});
+    $('q-acancel').addEventListener('click',function(){$('q-admin').style.display='none'});
+    $('q-asave').addEventListener('click',function(){
+      var d=collect().filter(function(c){return c.name});
+      if(!d.length)return alert('至少需要一張小卡');
+      cards=d;try{localStorage.setItem(KEY,JSON.stringify(cards));}catch(e){}
+      if(window.saveQuoteCards)window.saveQuoteCards(cards);
+      sel={};$('q-admin').style.display='none';render();
+    });
+    render();
+    })();
+    </script>
+</body>
+</html>
